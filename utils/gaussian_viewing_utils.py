@@ -229,7 +229,7 @@ def render_circular_conical_path_video(model_path, center_camera_idx, num_views,
         print(e)
         return
     
-def render_mask_gaussians(model_path, percent_of_gaussians, camera_index):
+def render_mask_gaussians(model_path, percent_of_gaussians, camera_index, kernel_size=0.1):
     """
     Render an image of the scene from camera index specified with specific percent of gaussians visisble.
 
@@ -260,7 +260,7 @@ def render_mask_gaussians(model_path, percent_of_gaussians, camera_index):
     tmp_gaussians.active_sh_degree = gaussians.max_sh_degree
 
     cam = load_camera(model_path, camera_index)
-    render_res = render(cam, tmp_gaussians, pipeline, background)
+    render_res = render(cam, tmp_gaussians, pipeline, background, kernel_size)
     rendering = render_res["render"]
     return (rendering.permute(1, 2, 0) * 255).to(torch.uint8).detach().cpu().numpy()
 
@@ -455,11 +455,11 @@ def rotate_about_x_axis(R, degree):
     #     [np.sin(rad), np.cos(rad), 0],
     #     [0, 0, 1]
     # ])
-    # R_x = np.array([
-    #     [np.cos(rad), 0, np.sin(rad)],
-    #     [0, 1, 0],
-    #     [-np.sin(rad), 0, np.cos(rad)]
-    # ])
+    R_x = np.array([
+        [np.cos(rad), 0, np.sin(rad)],
+        [0, 1, 0],
+        [-np.sin(rad), 0, np.cos(rad)]
+    ])
     # transpose R first
     # R = R.transpose()
     return np.dot(R, R_x)
@@ -496,7 +496,7 @@ def rotate_about_x_path(model_path, center_camera_idx, degree, num_steps=120, nu
             cameras.append(new_camera)
     return cameras
 
-def render_rotate_about_x_path_video(model_path, center_camera_idx, degree, fps, output_path, num_steps=120, num_repeats=1):
+def render_rotate_about_x_path_video(model_path, center_camera_idx, degree, fps, output_path, num_steps=120, num_repeats=1, kernel_size=0.1):
     """
     render a rotation about x-axis path video of the Gaussian model around the center_camera location provided. 
 
@@ -523,7 +523,7 @@ def render_rotate_about_x_path_video(model_path, center_camera_idx, degree, fps,
     # Render
     images = []
     for camera in cameras:
-        render_res = render(camera, gaussians, pipeline, background)
+        render_res = render(camera, gaussians, pipeline, background, kernel_size)
         rendering = render_res["render"]
         image = (rendering.permute(1, 2, 0) * 255).to(torch.uint8).detach().cpu().numpy()
         images.append(image)
